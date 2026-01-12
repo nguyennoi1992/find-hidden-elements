@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hidden Elements</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 10px; width: 320px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; font-size: 14px; }
+        .id { color: blue; }
+        .class { color: green; }
+        button { margin: 2px 0; padding: 4px 8px; font-size: 13px; cursor: pointer; }
+        #toolbar { margin: 10px 0; }
+    </style>
+</head>
+<body>
+<h3>Hidden Elements</h3>
+<button id="scan">&#x1F50D; Scan Page</button>
+
+<div id="toolbar">
+    <button id="removeAll">&#x1F5D1; Remove All URLs</button>
+    <button id="toggleAll">&#x1F441; Show/Hide All</button>
+</div>
+
+<ul id="result"></ul>
+
+<script src="popup.js"></script>
+</body>
+</html>
