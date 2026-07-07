@@ -4,10 +4,12 @@
 Extension này giúp bạn:
 - Quét (scan) tất cả **các phần tử bị ẩn** (`display: none`) trên trang web
 - Nhận diện các **popup / dialog** ẩn
+- Dọn nhanh popup che nội dung đọc truyện, gồm các lớp phủ kiểu `#google_vignette`
+- Gỡ blur / khóa scroll sau khi popup bị chèn vào trang
 - Hiển thị danh sách kết quả trong popup
 - Cho phép **Toggle (ẩn/hiện)** từng phần tử
 - Cho phép **Remove link (<a>)** bên trong các phần tử ẩn
-- Hỗ trợ **Show / Hide All** và **Remove All URLs**
+- Hỗ trợ **Show / Hide All** và **Remove Popups**
 
 Phù hợp để:
 - Debug web
@@ -25,6 +27,13 @@ Phù hợp để:
   - Có `id` hoặc `class`
   - Popup / dialog (`popup`, `dialog` trong id/class)
 
+### Clean Reader Popups
+- Xóa popup quảng cáo / vignette đang che nội dung
+- Xóa `#google_vignette` khỏi URL bằng History API
+- Mở lại scroll nếu trang bị khóa `overflow: hidden`
+- Tắt blur trên vùng nội dung truyện
+- Theo dõi DOM trong thời gian ngắn để dọn popup được chèn lại sau khi bấm nút
+
 ### 👁 Toggle Element
 - Hiện / Ẩn lại phần tử đã bị `display:none`
 - Tự động scroll đến vị trí phần tử
@@ -37,8 +46,9 @@ Phù hợp để:
 ### 👁 Show / Hide All
 - Hiện hoặc ẩn toàn bộ hidden / popup elements
 
-### 🗑 Remove All URLs
-- Xóa toàn bộ link ẩn trong trang
+### 🗑 Remove Popups
+- Dọn các phần tử giống popup / quảng cáo che màn hình
+- Giữ lại link điều hướng và link trong nội dung truyện
 
 ---
 
@@ -102,8 +112,8 @@ if (
     * `edge://`
     * `about:`
     * `chrome-extension://`
-* Không override được CSS `!important`
-* Không xử lý `visibility:hidden` hoặc `opacity:0` (có thể mở rộng)
+* Không override được mọi CSS `!important`
+* Popup được tạo trong iframe cross-origin có thể cần bấm nút dọn lại sau khi trang chèn mới
 
 ---
 

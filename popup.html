@@ -3,21 +3,26 @@
 <head>
     <title>Hidden Elements</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 10px; width: 320px; }
-        ul { padding-left: 20px; }
-        li { margin-bottom: 5px; font-size: 14px; }
-        .id { color: blue; }
-        .class { color: green; }
-        button { margin: 2px 0; padding: 4px 8px; font-size: 13px; cursor: pointer; }
-        #toolbar { margin: 10px 0; }
+        body { font-family: Arial, sans-serif; padding: 10px; width: 340px; color: #1f2937; }
+        h3 { margin: 0 0 10px; }
+        ul { padding-left: 18px; }
+        li { margin-bottom: 7px; font-size: 13px; line-height: 1.35; }
+        .id { color: #1d4ed8; }
+        .class { color: #047857; }
+        button { margin: 2px 0; padding: 6px 9px; font-size: 13px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+        button:hover { background: #f8fafc; }
+        #cleanReader { width: 100%; margin-bottom: 8px; border-color: #2563eb; background: #2563eb; color: #fff; font-weight: 700; }
+        #cleanReader:hover { background: #1d4ed8; }
+        #toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
     </style>
 </head>
 <body>
 <h3>Hidden Elements</h3>
+<button id="cleanReader">Clean Reader Popups</button>
 <button id="scan">&#x1F50D; Scan Page</button>
 
 <div id="toolbar">
-    <button id="removeAll">&#x1F5D1; Remove All URLs</button>
+    <button id="removeAll">&#x1F5D1; Remove Popups</button>
     <button id="toggleAll">&#x1F441; Show/Hide All</button>
 </div>
 
