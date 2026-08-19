@@ -249,57 +249,25 @@ document.getElementById("scan").addEventListener("click", async () => {
                 return el.tagName.toLowerCase();
             }
 
+            // Extract and normalize display value from inline style attribute
+            function getInlineDisplay(el) {
+                const raw = el.getAttribute("style") || "";
+                const match = raw.match(/(?:^|;)\s*display\s*:\s*([^;]+)/i);
+                return match ? match[1].trim().toLowerCase() : null;
+            }
+
             document.querySelectorAll("*").forEach(el => {
-                const style = window.getComputedStyle(el);
-                const rect = el.getBoundingClientRect();
-
-                if (style.display === "none" && el.querySelector("p") && (el.id || el.className)) {
+                const display = getInlineDisplay(el);
+                if (display === "block" || display === "none") {
                     found.push({
                         id: el.id || "",
                         class: typeof el.className === "string" ? el.className : "",
                         selector: getSelector(el),
-                        type: "hidden"
+                        display,
+                        type: display === "none" ? "hidden" : "visible"
                     });
-                }
-
-                const zIndex = parseInt(style.zIndex, 10);
-                if ((style.position === "absolute" || style.position === "fixed") &&
-                    !Number.isNaN(zIndex) && zIndex >= 90 &&
-                    parseFloat(style.opacity) <= 0.1 &&
-                    rect.width > 50 && rect.height > 50) {
-                    found.push({
-                        id: el.id || "",
-                        class: typeof el.className === "string" ? el.className : "",
-                        selector: getSelector(el),
-                        type: "overlay-redirect"
-                    });
-                }
-
-                if (el.tagName.toLowerCase() === "a" || el.tagName.toLowerCase() === "button") {
-                    const isOffScreen = parseInt(style.left, 10) < -900 || parseInt(style.top, 10) < -900;
-                    const isInvisible = parseFloat(style.opacity) === 0 || style.visibility === "hidden";
-                    const isTiny = rect.width <= 1 && rect.height <= 1 && rect.width >= 0 && rect.height >= 0;
-
-                    if (isOffScreen || isInvisible || isTiny) {
-                        found.push({
-                            id: el.id || "",
-                            class: typeof el.className === "string" ? el.className : "",
-                            selector: getSelector(el),
-                            type: "hidden-link"
-                        });
-                    }
                 }
             });
-
-            document.querySelectorAll("*[id*='popup'], *[id*='dialog'], *[class*='popup'], *[class*='dialog'], *[class*='overlay'], *[id*='overlay']")
-                .forEach(el => {
-                    found.push({
-                        id: el.id || "",
-                        class: typeof el.className === "string" ? el.className : "",
-                        selector: getSelector(el),
-                        type: "popup"
-                    });
-                });
 
             return found;
         }
@@ -329,7 +297,8 @@ document.getElementById("scan").addEventListener("click", async () => {
             removeButton.dataset.selector = el.selector;
             removeButton.dataset.action = "remove";
 
-            li.append(`[${el.type}] ID: `, idSpan, ", Class: ", classSpan, " ");
+            const typeLabel = el.display ? `${el.type}(${el.display})` : el.type;
+            li.append(`[${typeLabel}] ID: `, idSpan, ", Class: ", classSpan, " ");
             li.append(toggleButton, " ", removeButton);
             resultList.appendChild(li);
         });
