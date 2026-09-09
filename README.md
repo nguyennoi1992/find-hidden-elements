@@ -4,6 +4,9 @@
 Extension này giúp bạn:
 - Quét (scan) tất cả **các phần tử bị ẩn** (`display: none`) trên trang web
 - Nhận diện các **popup / dialog** ẩn
+- **Mở khóa toàn bộ nội dung đọc truyện (Unlock Story Content)**: Tự động vượt qua các banner bắt bấm link affiliate (Shopee / Lazada) để mở khóa truyện mà không cần click vào link
+- **Chặn bẫy click quảng cáo ngẫu nhiên**: Ngăn chặn trang truyện tự động mở tab affiliate khi người dùng nhấp chuột đọc truyện
+- **Gỡ bỏ chống bôi đen / copy**: Xóa lớp phủ trong suốt (`div.bg-transparent`) và class `select-none` để người đọc thoải mái sao chép văn bản
 - Dọn nhanh popup che nội dung đọc truyện, gồm các lớp phủ kiểu `#google_vignette`
 - Gỡ blur / khóa scroll sau khi popup bị chèn vào trang
 - Hiển thị danh sách kết quả trong popup
@@ -12,6 +15,7 @@ Extension này giúp bạn:
 - Hỗ trợ **Show / Hide All** và **Remove Popups**
 
 Phù hợp để:
+- Đọc truyện mượt mà không bị làm phiền bởi affiliate lock & popup
 - Debug web
 - Phát hiện nội dung ẩn
 - Kiểm tra link ẩn, tracking, ads
@@ -27,8 +31,18 @@ Phù hợp để:
   - Có `id` hoặc `class`
   - Popup / dialog (`popup`, `dialog` trong id/class)
 
+### 🔓 Unlock Story Content (Mở khóa truyện & Vượt link Affiliate)
+- Hỗ trợ các trang truyện dùng React SPA / dynamic loading (như `daotruyen.me`).
+- Tự động kích hoạt cơ chế mở khóa của React component mà không cần bấm vào liên kết Shopee / Lazada.
+- Ngăn chặn triệt để việc bật tab liên kết mới (`window.open` bypass & `e.preventDefault()`).
+- Lưu trữ session state (`top: true`, `adv: future`) để các chương sau không bị khóa lại khi bấm đọc tiếp.
+- Cơ chế dự phòng (Fallback): Trích xuất trực tiếp `paragraph` từ bộ nhớ React Fiber hoặc tải nội dung qua API endpoint bằng `Request-Token` của phiên hiện tại nếu giao diện React không tự render lại.
+- Tự động xóa lớp phủ vô hình (`div.bg-transparent`) và class `select-none`, cho phép bôi đen chọn chữ và copy nội dung truyện.
+- Hoạt động tự động ngầm qua Content Script hoặc kích hoạt thủ công qua nút **"🔓 Unlock Story Content"** trong popup.
+
 ### Clean Reader Popups
 - Xóa popup quảng cáo / vignette đang che nội dung
+- Tích hợp tự động mở khóa nội dung chương truyện
 - Xóa `#google_vignette` khỏi URL bằng History API
 - Mở lại scroll nếu trang bị khóa `overflow: hidden`
 - Tắt blur trên vùng nội dung truyện
@@ -78,6 +92,7 @@ section.hidden-content
 extension/
 │
 ├── manifest.json
+├── content.js
 ├── popup.html
 ├── popup.js
 ├── icon.png

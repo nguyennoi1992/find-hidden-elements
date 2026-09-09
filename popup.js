@@ -31,13 +31,17 @@ function showMessage(message) {
     resultList.appendChild(li);
 }
 
-async function runInActiveTab(func, args = []) {
+async function runInActiveTab(func, args = [], world = "ISOLATED") {
     const tab = await getActiveTab();
-    return chrome.scripting.executeScript({
+    const config = {
         target: {tabId: tab.id},
         func,
         args
-    });
+    };
+    if (world) {
+        config.world = world;
+    }
+    return chrome.scripting.executeScript(config);
 }
 
 function cleanReaderPopups(options = {}) {
@@ -216,13 +220,234 @@ function cleanReaderPopups(options = {}) {
     return stats;
 }
 
+function unlockStoryInTab() {
+    const stats = {
+        unlocked: false,
+        method: "none",
+        paragraphsCount: 0
+    };
+
+    try {
+        sessionStorage.setItem("top", JSON.stringify(true));
+        sessionStorage.setItem("adv", JSON.stringify({
+            time: Date.now() + 315360000000,
+            link: ""
+        }));
+    } catch (e) {}
+
+    const reopenBtns = Array.from(document.querySelectorAll("button")).filter(b =>
+        b.textContent && b.textContent.includes("Mở lại popup")
+    );
+    for (const btn of reopenBtns) {
+        const key = Object.keys(btn).find(k => k.startsWith("__reactProps"));
+        if (key && typeof btn[key]?.onClick === "function") {
+            try {
+                btn[key].onClick({preventDefault() {}, stopPropagation() {}});
+            } catch (e) {}
+        } else {
+            btn.click();
+        }
+    }
+
+    const links = Array.from(document.querySelectorAll('a[href*="shopee"], a[href*="lazada"], a[href*="s.shopee.vn"]')).concat(
+        Array.from(document.querySelectorAll("a")).filter(a => {
+            const parent = a.closest("div");
+            return parent && parent.innerText && parent.innerText.includes("Mời bạn CLICK vào liên kết");
+        })
+    );
+
+    for (const link of links) {
+        const propsKey = Object.keys(link).find(k => k.startsWith("__reactProps"));
+        if (propsKey && typeof link[propsKey]?.onClick === "function") {
+            try {
+                link[propsKey].onClick({
+                    preventDefault() {},
+                    stopPropagation() {}
+                });
+                stats.unlocked = true;
+                stats.method = "react_props";
+            } catch (e) {}
+        }
+
+        const origOpen = window.open;
+        try {
+            window.open = function () { return null; };
+            const clickEvent = new MouseEvent("click", {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            link.addEventListener("click", (e) => e.preventDefault(), {capture: true, once: true});
+            link.dispatchEvent(clickEvent);
+            stats.unlocked = true;
+            if (stats.method === "none") stats.method = "dom_event";
+        } catch (e) {
+        } finally {
+            setTimeout(() => {
+                if (window.open !== origOpen) window.open = origOpen;
+            }, 150);
+        }
+    }
+
+    function restoreTextSelection() {
+        document.querySelectorAll(".select-none").forEach(el => {
+            el.classList.remove("select-none");
+            el.style.userSelect = "text";
+            el.style.webkitUserSelect = "text";
+        });
+        document.querySelectorAll(".read_str_content .absolute.inset-0, .read_str_content div.bg-transparent").forEach(el => {
+            el.remove();
+        });
+        document.querySelectorAll(".read_str_content").forEach(el => {
+            el.style.userSelect = "text";
+            el.style.webkitUserSelect = "text";
+            el.style.pointerEvents = "auto";
+        });
+    }
+
+    function removeLockContainers() {
+        document.querySelectorAll("div").forEach(div => {
+            const text = div.innerText || "";
+            if (text.includes("Mời bạn CLICK vào liên kết bên dưới để mở khóa") ||
+                text.includes("Chương đã bị khóa, nếu muốn đọc tiếp")) {
+                if (div.classList.contains("text-center") || div.parentElement?.classList.contains("text-center")) {
+                    const wrapper = div.classList.contains("text-center") ? div : div.parentElement;
+                    wrapper.remove();
+                } else {
+                    div.remove();
+                }
+            }
+        });
+    }
+
+    function injectParagraphs(paragraphText) {
+        if (!paragraphText) return false;
+        let container = document.querySelector(".read_str_content");
+        if (!container) {
+            const mainContentDiv = document.querySelector("main div > div");
+            if (!mainContentDiv) return false;
+            removeLockContainers();
+            container = document.createElement("div");
+            container.className = "relative mt-6 md:p-4 text-xl read_str_content dark:shadow-2xl";
+            mainContentDiv.appendChild(container);
+        }
+
+        if (container.querySelectorAll("p").length > 2) {
+            restoreTextSelection();
+            removeLockContainers();
+            return true;
+        }
+
+        container.innerHTML = "";
+        const lines = paragraphText.replaceAll("\r", "").split("\n");
+        for (const line of lines) {
+            if (line.trim().length === 0) continue;
+            const p = document.createElement("p");
+            p.textContent = line;
+            p.style.marginBottom = "1rem";
+            p.style.lineHeight = "1.8";
+            container.appendChild(p);
+        }
+        restoreTextSelection();
+        removeLockContainers();
+        return true;
+    }
+
+    const content = document.querySelector(".read_str_content");
+    let pCount = content ? content.querySelectorAll("p").length : 0;
+    if (pCount > 2) {
+        restoreTextSelection();
+        removeLockContainers();
+        stats.unlocked = true;
+        stats.paragraphsCount = pCount;
+        return stats;
+    }
+
+    try {
+        const root = document.getElementById("root");
+        if (root) {
+            const fiberKey = Object.keys(root).find(k => k.startsWith("__reactFiber"));
+            if (fiberKey) {
+                const queue = [root[fiberKey]];
+                let inspected = 0;
+                while (queue.length > 0 && inspected < 2000) {
+                    inspected++;
+                    const cur = queue.shift();
+                    if (!cur) continue;
+                    let hook = cur.memoizedState;
+                    while (hook) {
+                        if (hook.memoizedState && typeof hook.memoizedState === "object") {
+                            const stateObj = hook.memoizedState;
+                            if (typeof stateObj.paragraph === "string" && stateObj.paragraph.trim().length > 50) {
+                                if (injectParagraphs(stateObj.paragraph)) {
+                                    stats.unlocked = true;
+                                    stats.method = "fiber_extracted";
+                                    stats.paragraphsCount = document.querySelectorAll(".read_str_content p").length;
+                                    return stats;
+                                }
+                            }
+                        }
+                        hook = hook.next;
+                    }
+                    if (cur.child) queue.push(cur.child);
+                    if (cur.sibling) queue.push(cur.sibling);
+                }
+            }
+        }
+    } catch (e) {}
+
+    const path = window.location.pathname;
+    const match = path.match(/\/([^/]+)\/chuong-(\d+)/);
+    if (match) {
+        const [, slug, chapterNum] = match;
+        const token = localStorage.getItem("59d7d5eeb291f4e5");
+        const headers = token ? {"Request-Token": token} : {};
+        fetch(`/api/public/v2/${slug}/${chapterNum}`, {headers})
+            .then(res => res.ok ? res.json() : null)
+            .then(json => {
+                if (json?.chapter?.paragraph) {
+                    injectParagraphs(json.chapter.paragraph);
+                }
+            })
+            .catch(() => {});
+    }
+
+    restoreTextSelection();
+    stats.paragraphsCount = document.querySelectorAll(".read_str_content p").length;
+    return stats;
+}
+
 document.getElementById("cleanReader").addEventListener("click", async () => {
     try {
         const results = await runInActiveTab(cleanReaderPopups, [{observe: true, repeat: 5}]);
+        try {
+            await runInActiveTab(unlockStoryInTab, [], "MAIN");
+        } catch (e) {
+            await runInActiveTab(unlockStoryInTab, []);
+        }
         const stats = results?.[0]?.result || {};
-        showMessage(`Cleaned reader popup: removed ${stats.removed || 0}, unlocked ${stats.unlocked || 0}, unblurred ${stats.unblurred || 0}.`);
+        showMessage(`Cleaned reader popup: removed ${stats.removed || 0}, unlocked ${stats.unlocked || 0}, unblurred ${stats.unblurred || 0}. Story unlock attempted.`);
     } catch (error) {
         showMessage(`Cannot clean this page: ${error.message}`);
+    }
+});
+
+document.getElementById("unlockStory").addEventListener("click", async () => {
+    try {
+        let results;
+        try {
+            results = await runInActiveTab(unlockStoryInTab, [], "MAIN");
+        } catch (e) {
+            results = await runInActiveTab(unlockStoryInTab, []);
+        }
+        const stats = results?.[0]?.result || {};
+        if (stats.unlocked || stats.paragraphsCount > 0) {
+            showMessage(`Story unlocked successfully! (${stats.paragraphsCount || "content"} paragraphs visible)`);
+        } else {
+            showMessage("No affiliate lock found or story is already unlocked.");
+        }
+    } catch (error) {
+        showMessage(`Cannot unlock story: ${error.message}`);
     }
 });
 

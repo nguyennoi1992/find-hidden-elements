@@ -1,9 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Find Hidden Elements",
-  "version": "1.1.0",
-  "description": "Find hidden elements and clean intrusive reader popups such as Google vignette overlays.",
+  "version": "1.2.0",
+  "description": "Find hidden elements, unlock story content, bypass affiliate locks, and clean intrusive reader popups.",
   "permissions": ["scripting", "activeTab"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://daotruyen.me/*",
+        "*://*.daotruyen.me/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
